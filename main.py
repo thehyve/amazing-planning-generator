@@ -95,18 +95,20 @@ def add_planning_worksheet_formatting(worksheet: Worksheet,
         (143, 193, 169),
     ]
 
-    # Determine the first and last cell for each project type
-    merge_ranges = {}
+    # Determine the first and last cell of consecutive project types
+    merge_ranges: List[List[int]] = []
+    previous_val = None
     for i, project_type in enumerate(project_type_header[1:], start=2):
         if project_type == 'Total':
             break
-        if project_type not in merge_ranges:
-            merge_ranges[project_type] = [i, i]
+        if project_type != previous_val:
+            merge_ranges.append([i, i])
         else:
-            merge_ranges[project_type][1] = i
+            merge_ranges[-1][1] = i
+        previous_val = project_type
 
     # Merge consecutive project type cells and color them
-    for merge_range, rgb in zip(merge_ranges.values(), cycle(rgb_colors)):
+    for merge_range, rgb in zip(merge_ranges, cycle(rgb_colors)):
         start_col_idx = merge_range[0]
         end_col_idx = merge_range[1]
         worksheet.merge_cells(1, start_col_idx, 1, end_col_idx)
