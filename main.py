@@ -44,7 +44,7 @@ def gsheet_api_check(scopes: List[str]):
             creds.refresh(Request())
         else:
             flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_FILE, scopes)
-            creds = flow.run_local_server(port=0)
+            creds = flow.run_console()
         with TOKEN_FILE.open('wb') as token:
             pickle.dump(creds, token)
     return creds
@@ -191,7 +191,7 @@ def get_week_planning(spreadsheet_id: str, range_name: str, week_column: str) ->
 def write_week_planning_to_gsheet(df: pd.DataFrame,
                                   spreadsheet_id: str,
                                   week_number: int) -> None:
-    gc = gspread.oauth()
+    gc = gspread.oauth(flow=gspread.auth.console_flow)
     sht1 = gc.open_by_key(spreadsheet_id)
 
     # Create or replace worksheet
