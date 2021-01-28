@@ -9,5 +9,5 @@ and download the credentials.json file.
 
 ## Run
 - Update config.yml such that it points to the source and target 
-  spreadsheets and will select the correct week column.
-- run ```python main.py```
+  spreadsheets.
+- run ```python main.py``` (On the first run you will need to authenticate for both spreadsheets being accessed).

@@ -1,5 +1,7 @@
 import logging
 import pickle
+from datetime import datetime
+from itertools import cycle
 from pathlib import Path
 from string import ascii_uppercase
 from typing import List, Dict
@@ -14,8 +16,8 @@ from googleapiclient.discovery import build
 from gspread import WorksheetNotFound
 from gspread.models import Worksheet
 from gspread.utils import rowcol_to_a1
-from itertools import cycle
 
+CURR_WEEK_NR: int = datetime.now().isocalendar()[1]
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 
 CONFIG_DIR = Path.home() / '.config' / 'gspread'
@@ -137,10 +139,15 @@ def add_planning_worksheet_formatting(worksheet: Worksheet,
     worksheet.freeze(rows=2, cols=1)
 
 
-def get_week_planning(spreadsheet_id: str, range_name: str, week_column: str) -> pd.DataFrame:
+def get_week_planning(spreadsheet_id: str, range_name: str) -> pd.DataFrame:
     data = pull_sheet_data(SCOPES, spreadsheet_id, range_name)
 
     df = pd.DataFrame(data, columns=None)
+
+    # Get the col idx of the current week based on week number
+    week_row = df.iloc[1, :]
+    col_idx_curr_week = week_row[week_row == str(CURR_WEEK_NR)].index.values[0]
+
     # Only keep rows after the first empty row
     idx_first_empty_row = df.index[df.isnull().all(axis=1)][0]
     idx_first_project_row = idx_first_empty_row + 1
@@ -150,8 +157,7 @@ def get_week_planning(spreadsheet_id: str, range_name: str, week_column: str) ->
     df.loc[:, 0:1] = df.loc[:, 0:1].replace('', np.nan).ffill(axis=0)
 
     # Only keep columns project_type, project_name, person and hours
-    week_col_idx = excel_col_to_int(week_column)
-    df = df.loc[:, [0, 1, 2, week_col_idx]]
+    df = df.loc[:, [0, 1, 2, col_idx_curr_week]]
 
     # Only keep full rows (project name, person and number of hours)
     df.replace('', np.nan, inplace=True)
@@ -190,20 +196,18 @@ def get_week_planning(spreadsheet_id: str, range_name: str, week_column: str) ->
     return overview_df
 
 
-def write_week_planning_to_gsheet(df: pd.DataFrame,
-                                  spreadsheet_id: str,
-                                  week_number: int) -> None:
+def write_week_planning_to_gsheet(df: pd.DataFrame, spreadsheet_id: str) -> None:
     gc = gspread.oauth(flow=gspread.auth.console_flow)
     sht1 = gc.open_by_key(spreadsheet_id)
 
     # Create or replace worksheet
-    new_worksheet_name = f"Week {week_number}"
+    new_worksheet_name = f"Week {CURR_WEEK_NR}"
     try:
         new_worksheet = sht1.worksheet(new_worksheet_name)
         sht1.del_worksheet(new_worksheet)
         logger.info(f'Worksheet {new_worksheet_name} already exists. Replacing.')
     except WorksheetNotFound:
-        pass
+        logger.info(f'Worksheet {new_worksheet_name} created')
     finally:
         new_worksheet = sht1.add_worksheet(title=new_worksheet_name, rows="100", cols="100")
 
@@ -220,10 +224,8 @@ if __name__ == '__main__':
     logger.info(f'Config params: {config}')
 
     week_planning_df = get_week_planning(spreadsheet_id=config['SOURCE_SPREADSHEET_ID'],
-                                         range_name=config['SOURCE_WORKSHEET'],
-                                         week_column=config['WEEK_COLUMN'])
+                                         range_name=config['SOURCE_WORKSHEET'])
     logger.info('Writing to target sheet')
     write_week_planning_to_gsheet(df=week_planning_df,
-                                  spreadsheet_id=config['TARGET_SPREADSHEET_ID'],
-                                  week_number=config['TARGET_WEEK_NUMBER'])
+                                  spreadsheet_id=config['TARGET_SPREADSHEET_ID'])
     logger.info('Completed')
