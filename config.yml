@@ -1,0 +1,5 @@
+WEEK_COLUMN: 'E'  # Column from the source worksheet that contains the hours
+SOURCE_SPREADSHEET_ID: '13JLxAGU3QJQ4kDZKYTH0weZQ66ZkJqtbE0XQxoILsec'
+SOURCE_WORKSHEET: 'HDI Planning per project'
+TARGET_SPREADSHEET_ID: '1NeDY8qdQ_4j9pwQKjqSFGbD9SpqPhHiMShCXbmSp6ZQ'
+TARGET_WEEK_NUMBER: 99 # Will determine the name of the target worksheet
