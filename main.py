@@ -24,7 +24,7 @@ CREDENTIALS_FILE = CONFIG_DIR / 'credentials.json'
 TOKEN_FILE = CONFIG_DIR / 'token.pickle'
 
 
-logging.basicConfig(format='%(levelname)s - %(message)s', level=logging.INFO)
+logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
