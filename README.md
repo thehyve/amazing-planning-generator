@@ -6,6 +6,7 @@ Generate the weekly planning from a Google spreadsheet.
 and download the credentials.json file.
 - Create a folder at `~/.config/gspread/`.
 - Put credentials.json and config.yml from this repo into this folder.
+- Install the dependencies listed in `requirements.txt`, preferably into a virtual environment.
 
 ## Run
 - Update config.yml such that it points to the source and target 
