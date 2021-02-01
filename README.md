@@ -1,5 +1,5 @@
 # amazing-planning-generator
-Generate the weekly planning from a Google spreadsheet.
+Generate the weekly planning from and to a Google spreadsheet.
 
 ## Setup
 - Enable the [Google sheets API](https://developers.google.com/sheets/api/quickstart/python) 
