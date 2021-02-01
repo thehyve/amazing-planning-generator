@@ -1,7 +1,6 @@
 import logging
 import pickle
 from datetime import datetime
-from itertools import cycle
 from pathlib import Path
 from string import ascii_uppercase
 from typing import List, Dict
@@ -16,6 +15,11 @@ from googleapiclient.discovery import build
 from gspread import WorksheetNotFound
 from gspread.models import Worksheet
 from gspread.utils import rowcol_to_a1
+from gspread_formatting import (
+    ConditionalFormatRule, GridRange, GradientRule, InterpolationPoint, ColorStyle,
+    get_conditional_format_rules, Color,
+)
+from itertools import cycle
 
 CURR_WEEK_NR: int = datetime.now().isocalendar()[1]
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
@@ -137,6 +141,28 @@ def add_planning_worksheet_formatting(worksheet: Worksheet,
 
     # Freeze the first (person) column and the top 2 (project) rows
     worksheet.freeze(rows=2, cols=1)
+
+    # Wrap text in project titles
+    worksheet.format("2:2", {
+        "wrapStrategy": "WRAP"
+    })
+
+    # Add conditional formatting, to create gradient for hour numbers
+    grad_color = Color(102/256, 205/256, 170/256)
+    rule = ConditionalFormatRule(
+        ranges=[GridRange.from_a1_range('B3:ZZ999', worksheet)],
+        gradientRule=GradientRule(
+            minpoint=InterpolationPoint(colorStyle=ColorStyle(themeColor='BACKGROUND'),
+                                        type='NUMBER', value='-7'),
+            maxpoint=InterpolationPoint(colorStyle=ColorStyle(rgbColor=grad_color),
+                                        type='NUMBER', value='40'),
+        )
+    )
+
+    rules = get_conditional_format_rules(worksheet)
+    rules.clear()
+    rules.append(rule)
+    rules.save()
 
 
 def get_week_planning(spreadsheet_id: str, range_name: str) -> pd.DataFrame:
