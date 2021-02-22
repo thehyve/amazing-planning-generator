@@ -208,7 +208,7 @@ def get_week_planning(spreadsheet_id: str, range_name: str) -> pd.DataFrame:
         try:
             hours = int(row.hours)
         except ValueError:
-            logger.info(f'Ignoring invalid hours value "{row.hours}" on line {row.Index+1}')
+            logger.info(f'Ignoring invalid hours value "{row.hours}" for project {row.Index}')
             continue
         overview_df.loc[row.person, row.Index] = hours
 
