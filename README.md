@@ -9,6 +9,5 @@ and download the credentials.json file.
 4. Install the dependencies listed in `requirements.txt`, preferably into a virtual environment (Python 3.8 is recommended).
 
 ## Run
-- Update config.yml such that it points to the source and target 
-  spreadsheets.
+- If needed, update config.yml such that it points to the source and target spreadsheets.
 - run ```python main.py``` (On the first run you will need to authenticate for both spreadsheets being accessed).
