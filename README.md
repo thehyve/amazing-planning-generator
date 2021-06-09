@@ -7,11 +7,13 @@ Generate the weekly planning from and to a Google spreadsheet.
 3. Enable the [Google sheets API](https://developers.google.com/sheets/api/quickstart/python) and create a new project.
 
 When using a service account (recommended)
+
 4. Create a new service account in the Google Developer Console for your project created in step 3.
 5. Create a new JSON key, download and store at `~/.config/gspread/service_account.json`.
 6. Give the service account access to the relevant Google spreadsheets by granting view/edit rights to the service account email address.
 
 Alternatively you can use your own Google account directly
+
 4. Create an OAuth 2.0 Client ID, then download and store the client secret at `~/.config/gspread/credentials.json`.
 
 ## Run
