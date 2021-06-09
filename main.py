@@ -5,21 +5,22 @@ import pickle
 from datetime import datetime
 from pathlib import Path
 from string import ascii_uppercase
-from typing import List, Dict
+from typing import Dict, List
 
 import gspread
 import numpy as np
 import pandas as pd
 import yaml
 from google.auth.transport.requests import Request
+from google.oauth2.service_account import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from gspread import WorksheetNotFound
 from gspread.models import Worksheet
 from gspread.utils import rowcol_to_a1
 from gspread_formatting import (
-    ConditionalFormatRule, GridRange, GradientRule, InterpolationPoint, ColorStyle,
-    get_conditional_format_rules, Color,
+    Color, ColorStyle, ConditionalFormatRule, GradientRule, GridRange,
+    InterpolationPoint, get_conditional_format_rules,
 )
 from itertools import cycle
 
@@ -29,6 +30,7 @@ SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 CONFIG_DIR = Path.home() / '.config' / 'gspread'
 CONFIG_FILE = CONFIG_DIR / 'config.yml'
 CREDENTIALS_FILE = CONFIG_DIR / 'credentials.json'
+SERVICE_ACCOUNT_FILE = CONFIG_DIR / 'service_account.json'
 TOKEN_FILE = CONFIG_DIR / 'token.pickle'
 
 
@@ -43,6 +45,12 @@ def read_yaml_file(path: Path) -> Dict:
 
 
 def gsheet_api_check(scopes: List[str]):
+    try:
+        return Credentials.from_service_account_file(str(SERVICE_ACCOUNT_FILE), scopes=scopes)
+    except FileNotFoundError:
+        logger.warning(f"No service account credentials available at {SERVICE_ACCOUNT_FILE} "
+                       f"(Switching to regular user authentication)")
+
     creds = None
     if TOKEN_FILE.exists():
         with TOKEN_FILE.open('rb') as token:
@@ -68,7 +76,8 @@ def pull_sheet_data(scopes: List[str], spreadsheet_id: str, range_name: str) -> 
     values = result.get('values', [])
 
     if not values:
-        logger.info('No data found.')
+        raise ValueError(f'No data found for workbook {spreadsheet_id} '
+                         f'in worksheet {range_name}.')
     else:
         rows = sheet.values().get(spreadsheetId=spreadsheet_id,
                                   range=range_name).execute()
