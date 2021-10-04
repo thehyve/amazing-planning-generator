@@ -33,6 +33,9 @@ CREDENTIALS_FILE = CONFIG_DIR / 'credentials.json'
 SERVICE_ACCOUNT_FILE = CONFIG_DIR / 'service_account.json'
 TOKEN_FILE = CONFIG_DIR / 'token.pickle'
 
+# The row index in the HDI planning sheet that contains the week numbers
+# (0-based, so if row 3 in the sheet, set to 2)
+WEEK_ROW_NUMBER = 2
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -182,10 +185,11 @@ def get_week_planning(spreadsheet_id: str, range_name: str) -> pd.DataFrame:
     df = pd.DataFrame(data, columns=None)
 
     # Get the col idx of the current week based on week number
-    week_row = df.iloc[1, :]
+    week_row = df.iloc[WEEK_ROW_NUMBER, :]
     col_idx_curr_week = week_row[week_row == str(CURR_WEEK_NR)].index.values[0]
 
-    # Only keep rows after the first empty row
+    # Only keep rows after the first empty row below the row with week numbers
+    df = df.loc[WEEK_ROW_NUMBER:, ]
     idx_first_empty_row = df.index[df.isnull().all(axis=1)][0]
     idx_first_project_row = idx_first_empty_row + 1
     df = df.loc[idx_first_project_row:, ]
