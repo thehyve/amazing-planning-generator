@@ -250,7 +250,7 @@ def write_week_planning_to_gsheet(df: pd.DataFrame, spreadsheet_id: str) -> None
     except WorksheetNotFound:
         logger.info(f'Worksheet {new_worksheet_name} created')
     finally:
-        new_worksheet = sht1.add_worksheet(title=new_worksheet_name, rows="100", cols="100")
+        new_worksheet = sht1.add_worksheet(title=new_worksheet_name, rows="100", cols="100", index=0)
 
     header_row1 = [val[0] for val in df.columns]
     header_row2 = [val[1] for val in df.columns]
