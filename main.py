@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 import logging
-import pickle
 from datetime import datetime
+from itertools import cycle
 from pathlib import Path
 from string import ascii_uppercase
 from typing import Dict, List
@@ -11,27 +11,16 @@ import gspread
 import numpy as np
 import pandas as pd
 import yaml
-from google.auth.transport.requests import Request
-from google.oauth2.service_account import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build
-from gspread import WorksheetNotFound
-from gspread.models import Worksheet
+from gspread import WorksheetNotFound, Client, Worksheet
 from gspread.utils import rowcol_to_a1
 from gspread_formatting import (
     Color, ColorStyle, ConditionalFormatRule, GradientRule, GridRange,
     InterpolationPoint, get_conditional_format_rules,
 )
-from itertools import cycle
 
 CURR_WEEK_NR: int = datetime.now().isocalendar()[1]
-SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 
-CONFIG_DIR = Path.home() / '.config' / 'gspread'
-CONFIG_FILE = CONFIG_DIR / 'config.yml'
-CREDENTIALS_FILE = CONFIG_DIR / 'credentials.json'
-SERVICE_ACCOUNT_FILE = CONFIG_DIR / 'service_account.json'
-TOKEN_FILE = CONFIG_DIR / 'token.pickle'
+CONFIG_FILE = Path.home() / '.config' / 'gspread' / 'config.yml'
 
 # The row index in the HDI planning sheet that contains the week numbers
 # (0-based, so if row 3 in the sheet, set to 2)
@@ -47,46 +36,16 @@ def read_yaml_file(path: Path) -> Dict:
     return contents
 
 
-def gsheet_api_check(scopes: List[str]):
-    try:
-        return Credentials.from_service_account_file(str(SERVICE_ACCOUNT_FILE), scopes=scopes)
-    except FileNotFoundError:
-        logger.warning(f"No service account credentials available at {SERVICE_ACCOUNT_FILE} "
-                       f"(Switching to regular user authentication)")
-
-    creds = None
-    if TOKEN_FILE.exists():
-        with TOKEN_FILE.open('rb') as token:
-            creds = pickle.load(token)
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_FILE, scopes)
-            creds = flow.run_console()
-        with TOKEN_FILE.open('wb') as token:
-            pickle.dump(creds, token)
-    return creds
-
-
-def pull_sheet_data(scopes: List[str], spreadsheet_id: str, range_name: str) -> List:
-    creds = gsheet_api_check(scopes)
-    service = build('sheets', 'v4', credentials=creds, cache_discovery=False)
-    sheet = service.spreadsheets()
-    result = sheet.values().get(
-        spreadsheetId=spreadsheet_id,
-        range=range_name).execute()
-    values = result.get('values', [])
-
+def pull_sheet_data(client: Client, spreadsheet_id: str, sheet_name: str) -> List[List[str]]:
+    """Get data from source spreadsheet as list of lists."""
+    sh = client.open_by_key(spreadsheet_id)
+    worksheet = sh.worksheet(sheet_name)
+    values = worksheet.get()
     if not values:
         raise ValueError(f'No data found for workbook {spreadsheet_id} '
-                         f'in worksheet {range_name}.')
-    else:
-        rows = sheet.values().get(spreadsheetId=spreadsheet_id,
-                                  range=range_name).execute()
-        data = rows.get('values')
-        logger.info("Data collected")
-        return data
+                         f'in worksheet {sheet_name}.')
+    logger.info("Data collected")
+    return values
 
 
 def excel_col_to_int(col: str) -> int:
@@ -179,8 +138,8 @@ def add_planning_worksheet_formatting(worksheet: Worksheet,
     rules.save()
 
 
-def get_week_planning(spreadsheet_id: str, range_name: str) -> pd.DataFrame:
-    data = pull_sheet_data(SCOPES, spreadsheet_id, range_name)
+def get_week_planning(client: Client, spreadsheet_id: str, range_name: str) -> pd.DataFrame:
+    data = pull_sheet_data(client, spreadsheet_id, range_name)
 
     df = pd.DataFrame(data, columns=None)
 
@@ -237,9 +196,8 @@ def get_week_planning(spreadsheet_id: str, range_name: str) -> pd.DataFrame:
     return overview_df
 
 
-def write_week_planning_to_gsheet(df: pd.DataFrame, spreadsheet_id: str) -> None:
-    gc = gspread.oauth(flow=gspread.auth.console_flow)
-    sht1 = gc.open_by_key(spreadsheet_id)
+def write_week_planning_to_gsheet(client: Client, df: pd.DataFrame, spreadsheet_id: str) -> None:
+    sht1 = client.open_by_key(spreadsheet_id)
 
     # Create or replace worksheet
     new_worksheet_name = f"Week {CURR_WEEK_NR}"
@@ -260,13 +218,25 @@ def write_week_planning_to_gsheet(df: pd.DataFrame, spreadsheet_id: str) -> None
     add_planning_worksheet_formatting(worksheet=new_worksheet, project_type_header=header_row1)
 
 
-if __name__ == '__main__':
+def main() -> None:
     config = read_yaml_file(CONFIG_FILE)
     logger.info(f'Config params: {config}')
 
-    week_planning_df = get_week_planning(spreadsheet_id=config['SOURCE_SPREADSHEET_ID'],
-                                         range_name=config['SOURCE_WORKSHEET'])
+    gc: Client = gspread.service_account()
+    week_planning_df = get_week_planning(
+        client=gc,
+        spreadsheet_id=config['SOURCE_SPREADSHEET_ID'],
+        range_name=config['SOURCE_WORKSHEET'],
+    )
+
     logger.info('Writing to target sheet')
-    write_week_planning_to_gsheet(df=week_planning_df,
-                                  spreadsheet_id=config['TARGET_SPREADSHEET_ID'])
+    write_week_planning_to_gsheet(
+        client=gc,
+        df=week_planning_df,
+        spreadsheet_id=config['TARGET_SPREADSHEET_ID']
+    )
     logger.info('Completed')
+
+
+if __name__ == '__main__':
+    main()
