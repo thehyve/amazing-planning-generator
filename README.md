@@ -18,4 +18,4 @@ Alternatively you can use your own Google account directly
 
 ## Run
 - If needed, update config.yml such that it points to the source and target spreadsheets.
-- run ```python main.py``` (On the first run you will need to authenticate for both spreadsheets being accessed).
+- run ```python main.py```.
