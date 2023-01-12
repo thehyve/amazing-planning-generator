@@ -24,7 +24,7 @@ CONFIG_FILE = Path.home() / '.config' / 'gspread' / 'config.yml'
 
 # The row index in the HDI planning sheet that contains the week numbers
 # (0-based, so if row 3 in the sheet, set to 2)
-WEEK_ROW_NUMBER = 2
+WEEK_ROW_NUMBER = 3
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -142,6 +142,11 @@ def get_week_planning(client: Client, spreadsheet_id: str, range_name: str) -> p
     data = pull_sheet_data(client, spreadsheet_id, range_name)
 
     df = pd.DataFrame(data, columns=None)
+
+    # First col is empty and is therefore dropped
+    df = df.drop(columns=df.columns[0], axis=1)
+    # Reset column labels
+    df.columns = range(df.columns.size)
 
     # Get the col idx of the current week based on week number
     week_row = df.iloc[WEEK_ROW_NUMBER, :]
