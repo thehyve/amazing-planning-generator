@@ -7,6 +7,7 @@ from pathlib import Path
 from string import ascii_uppercase
 from typing import Dict, List
 
+import click
 import gspread
 import numpy as np
 import pandas as pd
@@ -19,8 +20,6 @@ from gspread_formatting import (
 )
 
 CURR_WEEK_NR: int = datetime.now().isocalendar()[1]
-
-CONFIG_FILE = Path.home() / '.config' / 'gspread' / 'config.yml'
 
 # The row index in the HDI planning sheet that contains the week numbers
 # (0-based, so if row 3 in the sheet, set to 2)
@@ -223,11 +222,18 @@ def write_week_planning_to_gsheet(client: Client, df: pd.DataFrame, spreadsheet_
     add_planning_worksheet_formatting(worksheet=new_worksheet, project_type_header=header_row1)
 
 
-def main() -> None:
-    config = read_yaml_file(CONFIG_FILE)
+@click.command()
+@click.option('--config_dir', '-c', required=True, metavar='<config_dir_path>',
+              help='Directory containing config.yml and service_acount.json',
+              type=click.Path(dir_okay=True, file_okay=False, exists=True, readable=True))
+def main(config_dir: Path) -> None:
+    config_dir = Path(config_dir)
+    config_file = config_dir / 'config.yml'
+    service_account_file = config_dir / 'service_account.json'
+    config = read_yaml_file(config_file)
     logger.info(f'Config params: {config}')
 
-    gc: Client = gspread.service_account()
+    gc: Client = gspread.service_account(str(service_account_file))
     week_planning_df = get_week_planning(
         client=gc,
         spreadsheet_id=config['SOURCE_SPREADSHEET_ID'],
