@@ -158,7 +158,7 @@ def get_week_planning(
     df = pd.DataFrame(data, columns=None)
 
     # First col is empty and is therefore dropped
-    df = df.drop(columns=df.columns[0], axis=1)
+    df = df.drop(columns=df.columns[0])
     # Reset column labels
     df.columns = range(df.columns.size)
 
