@@ -17,5 +17,5 @@ Generate the weekly planning from and to a Google spreadsheet.
 
 ### Without Docker
 1. Make sure `service_account.json` and `config.yml` are together somewhere in the same folder, e.g. `~/.config/gspread/`.
-2. Install the dependencies listed in `requirements.txt` (Python 3.8+ is required).
-3. Run `./main.py -c <path/to/folder/from/step1>` (See all options with `./main.py --help`).
+2. Install the package with uv (Python 3.12+ is required).
+3. Run `uv run ./main.py -c <path/to/folder/from/step1>` (See all options with `uv run ./main.py --help`).
