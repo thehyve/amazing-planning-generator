@@ -1,4 +1,7 @@
 # amazing-planning-generator
+
+> _Sharks gotta swim. Bats gotta fly. And I need a weekly planning till I die._
+
 Generate the weekly planning from and to a Google spreadsheet.
 
 ## Setup
